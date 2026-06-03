@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=yes, viewport-fit=cover">
+    <title>NEBULA CORE | RESOURCE MONITOR</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/theme/dracula.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.12/mode/python/python.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, 'Segoe UI', monospace;
+            background: #03045E;
+            color: #CAF0F8;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* gradient ocean depth */
+        .bg-ocean {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 30%, #0077B6, #03045E);
+            z-index: -2;
+        }
+
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(#00B4D8 1px, transparent 1px);
+            background-size: 32px 32px;
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .topbar {
+            position: relative;
+            z-index: 20;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: rgba(0, 48, 73, 0.75);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid #00B4D8;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.3);
+        }
+
+        .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 1.4rem;
+            background: linear-gradient(135deg, #CAF0F8, #90E0EF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .logo-icon {
+            background: #0077B6;
+            width: 40px;
+            height: 40px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.4rem;
+            box-shadow: 0 0 10px #00B4D8;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            padding: 18px 16px;
+            max-width: 1300px;
+            margin: auto;
+        }
+
+        /* Cards */
+        .srv-card {
+            background: rgba(0, 51, 85, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid #00B4D8;
+            border-radius: 28px;
+            margin-bottom: 16px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+
+        .srv-card:hover {
+            background: #0077B6cc;
+            transform: translateY(-2px);
+            border-color: #90E0EF;
+        }
+
+        /* button styles using hex */
+        .btn-primary {
+            background: #0077B6;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.85rem;
+        }
+        .btn-primary:hover { background: #00B4D8; transform: scale(0.97); }
+
+        .btn-secondary {
+            background: rgba(0, 100, 148, 0.7);
+            border: 1px solid #90E0EF;
+            color: #CAF0F8;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-danger {
+            background: #c1121f;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+        }
+
+        .fm-btn {
+            background: rgba(0, 119, 182, 0.5);
+            border: 1px solid #90E0EF;
+            border-radius: 40px;
+            padding: 6px 12px;
+            font-size: 0.7rem;
+            color: #CAF0F8;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .fm-btn:hover { background: #00B4D8; color: #03045E; }
+
+        /* monitor stats row */
+        .monitor-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            background: rgba(0, 30, 60, 0.6);
+            border-radius: 28px;
+            padding: 12px 20px;
+            border: 1px solid #0077B6;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stat-gauge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .gauge-bar {
+            width: 120px;
+            height: 6px;
+            background: #03045E;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .gauge-fill {
+            height: 100%;
+            background: #00B4D8;
+            width: 0%;
+            border-radius: 10px;
+        }
+
+        /* file manager table - horizontal compact */
+        .fm-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+        }
+        .fm-table td, .fm-table th {
+            padding: 12px 8px;
+            border-bottom: 1px solid #0077B6;
+            vertical-align: middle;
+        }
+        .file-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            flex-wrap: wrap;
+        }
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        .file-actions i {
+            font-size: 1rem;
+            background: rgba(0,0,0,0.4);
+            padding: 6px;
+            border-radius: 30px;
+            width: 28px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .file-actions i:hover { background: #00B4D8; color: #03045E; }
+
+        /* console */
+        .console-panel {
+            background: #021a2b;
+            border-radius: 24px;
+            border: 1px solid #0077B6;
+            margin-bottom: 24px;
+        }
+        #console {
+            height: 240px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.7rem;
+            padding: 12px;
+            background: #010d1a;
+            color: #CAF0F8;
+        }
+
+        /* editor */
+        #editor {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #03045Ee6;
+            z-index: 2000;
+            padding: 20px;
+            backdrop-filter: blur(6px);
+        }
+        .CodeMirror { height: 70vh; border-radius: 20px; }
+
+        @media (max-width: 680px) {
+            .monitor-row { flex-direction: column; align-items: stretch; gap: 10px; }
+            .gauge-bar { width: 100%; }
+            .file-actions i { font-size: 0.8rem; width: 26px; }
+            .fm-table td, .fm-table th { padding: 8px 4px; }
+            .srv-card { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+<div class="bg-ocean"></div>
+<div class="bg-particles"></div>
+
+<div class="topbar">
+    <div class="logo-box"><div class="logo-icon"><i class="fas fa-water"></i></div><span>NEBULA·CORE</span></div>
+    <button class="btn-secondary" style="padding:6px 14px;" onclick="location.href='/logout'"><i class="fas fa-sign-out-alt"></i> EXIT</button>
+</div>
+
+<!-- HOME -->
+<div class="container" id="homeView">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap:wrap; gap:10px;">
+        <h2 style="font-size:1.3rem; color:#CAF0F8;"><i class="fas fa-microchip"></i> WORKSPACES</h2>
+        <button class="btn-primary" onclick="createServer()"><i class="fas fa-plus-circle"></i> NEW SERVER</button>
+    </div>
+    <div id="srvList"></div>
+</div>
+
+<!-- SERVER DASHBOARD -->
+<div class="container" id="manageView" style="display:none;">
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+        <button class="btn-secondary" onclick="goBackToServers()"><i class="fas fa-arrow-left"></i> BACK</button>
+        <div style="display: flex; gap: 8px;">
+            <button class="fm-btn" id="settingsBtn"><i class="fas fa-cog"></i> SETTINGS</button>
+        </div>
+    </div>
+
+    <!-- RESOURCE MONITOR (CPU / GPU / RAM) -->
+    <div class="monitor-row" id="resourceMonitor">
+        <div class="stat-gauge"><i class="fas fa-microchip"></i> CPU <div class="gauge-bar"><div class="gauge-fill" id="cpuFill"></div></div> <span id="cpuVal">0%</span></div>
+        <div class="stat-gauge"><i class="fas fa-chart-line"></i> RAM <div class="gauge-bar"><div class="gauge-fill" id="ramFill"></div></div> <span id="ramVal">0MB</span></div>
+        <div class="stat-gauge"><i class="fas fa-chart-simple"></i> GPU <div class="gauge-bar"><div class="gauge-fill" id="gpuFill"></div></div> <span id="gpuVal">0%</span></div>
+        <div id="vUptime" class="stat-gauge"><i class="fas fa-power-off"></i> OFFLINE</div>
+    </div>
+
+    <!-- action row -->
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+        <button class="btn-primary" onclick="srvAction('start')"><i class="fas fa-play"></i> START</button>
+        <button class="btn-secondary" onclick="srvAction('restart')"><i class="fas fa-sync-alt"></i> RESTART</button>
+        <button class="btn-danger" onclick="srvAction('stop')"><i class="fas fa-stop"></i> STOP</button>
+    </div>
+
+    <!-- terminal console -->
+    <div class="console-panel">
+        <div class="terminal-header" style="padding:8px 16px; background:#021a2b; border-bottom:1px solid #0077B6;">
+            <span><i class="fas fa-terminal"></i> LIVE CONSOLE · <span id="vSrvName">—</span></span>
+        </div>
+        <div id="console"></div>
+        <div class="terminal-input-area" style="display:flex; gap:8px; padding:10px; background:#001e33;">
+            <span style="color:#90E0EF;">⚡</span>
+            <input type="text" id="termCmd" placeholder="command..." onkeydown="if(event.key==='Enter') sendConsoleCommand()" style="flex:1; background:#03045E; border:none; padding:8px 12px; border-radius:30px; color:white;">
+            <button class="fm-btn" onclick="sendConsoleCommand()">RUN</button>
+        </div>
+    </div>
+
+    <!-- FILE MANAGER (horizontal long table) -->
+    <div class="fm-card" style="background:rgba(0, 51, 85, 0.5); border-radius: 28px; overflow-x:auto;">
+        <div class="fm-toolbar" style="display: flex; flex-wrap: wrap; gap: 8px; padding: 12px;">
+            <button class="fm-btn" id="fmUploadBtn"><i class="fas fa-upload"></i> UPLOAD</button>
+            <button class="fm-btn" id="fmInstallReqBtn"><i class="fas fa-cubes"></i> INSTALL REQ</button>
+            <button class="fm-btn" id="fmNewFileBtn"><i class="fas fa-file"></i> NEW FILE</button>
+            <button class="fm-btn" id="fmNewFolderBtn"><i class="fas fa-folder-plus"></i> NEW FOLDER</button>
+            <button class="fm-btn" id="fmRefreshBtn"><i class="fas fa-sync"></i> REFRESH</button>
+        </div>
+        <div class="fm-breadcrumb" id="fmBreadcrumb" style="padding:6px 16px; font-size:0.7rem;"></div>
+        <div style="overflow-x:auto;">
+            <table class="fm-table">
+                <thead><tr><th>NAME</th><th>SIZE</th><th>MODIFIED</th><th style="text-align:right">ACTIONS</th></tr></thead>
+                <tbody id="fmFileList"></tbody>
+            </table>
+            <div id="fmEmptyMsg" style="display:none; text-align:center; padding:30px;">🌀 EMPTY DIRECTORY</div>
+        </div>
+    </div>
+</div>
+
+<!-- SETTINGS MODAL (per server: main.py / bot.py + requirements) -->
+<div id="settingsModal" style="display:none; position:fixed; inset:0; background:#03045Edd; backdrop-filter:blur(8px); z-index:1500; align-items:center; justify-content:center;">
+    <div style="background:#021a2b; max-width:460px; width:90%; border-radius:36px; border:1px solid #00B4D8; padding:24px;">
+        <h3 style="color:#CAF0F8;"><i class="fas fa-sliders-h"></i> SERVER CONFIG</h3>
+        <div style="margin:20px 0;">
+            <label style="display:block; margin-bottom:6px;">🚀 STARTUP FILE (main.py / bot.py)</label>
+            <input type="text" id="startupFileInput" placeholder="main.py" style="width:100%; background:#03045E; border:1px solid #0077B6; padding:10px; border-radius:28px; color:white;">
+            <p style="font-size:0.6rem; margin-top:5px;">e.g., bot.py , app.py</p>
+        </div>
+        <div style="margin:20px 0;">
+            <label style="display:block; margin-bottom:6px;">📦 REQUIREMENTS (space separated)</label>
+            <input type="text" id="reqPkgsInput" placeholder="flask requests numpy" style="width:100%; background:#03045E; border:1px solid #0077B6; padding:10px; border-radius:28px; color:white;">
+            <p style="font-size:0.6rem;">auto pip install on apply</p>
+        </div>
+        <div style="display:flex; gap:12px; justify-content:flex-end;">
+            <button class="fm-btn" id="closeSettingsBtn">CANCEL</button>
+            <button class="btn-primary" id="applySettingsBtn">APPLY & INSTALL</button>
+        </div>
+    </div>
+</div>
+
+<!-- Editor modal -->
+<div id="editor"><div style="background:#001e33; border-radius:32px; height:90%; display:flex; flex-direction:column;"><div style="padding:12px 20px; display:flex; justify-content:space-between;"><span id="edFile"></span><div><button class="fm-btn" onclick="closeEditor()">CANCEL</button><button class="btn-primary" onclick="saveFileContent()">SAVE</button></div></div><textarea id="edText" style="flex:1;"></textarea></div></div>
+
+<script>
+    // GLOBALS
+    let curSrv = null;
+    let logInterval = null;
+    let currentPath = "";
+    let editorInstance = null;
+    let statsInterval = null;
+
+    function escapeHtml(s){ return s ? s.replace(/[&<>]/g,function(m){return m==='&'?'&amp;':m==='<'?'&lt;':'&gt;';}) : ''; }
+    function formatSize(b){ if(!b && b!==0) return '—'; if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+
+    async function loadServers(){
+        const r = await fetch('/servers');
+        const d = await r.json();
+        const container = document.getElementById('srvList');
+        if(!d.servers.length){ container.innerHTML='<div style="text-align:center;padding:50px;">🌊 no servers — create one</div>'; return; }
+        container.innerHTML = d.servers.map(s => `
+            <div class="srv-card" onclick='openServer(${JSON.stringify(s)})'>
+                <div><div style="font-weight:800;">${escapeHtml(s.name)}</div><div style="font-size:0.7rem;">📁 ${s.folder}</div><div style="font-size:0.65rem;">${s.online?'🟢 ONLINE':'🔴 OFFLINE'} | CPU ${s.cpu||'0%'} | RAM ${s.ram||'0MB'}</div></div>
+                <i class="fas fa-trash-alt" style="color:#ff8c8c;" onclick="event.stopPropagation(); deleteServer('${s.folder}')"></i>
+            </div>
+        `).join('');
+    }
+
+    async function deleteServer(folder){
+        if(await Swal.fire({title:'⚠️ DESTROY',text:'All data erased',icon:'warning',showCancelButton:true,background:'#021a2b',color:'white'}).then(r=>r.isConfirmed)){
+            await fetch(`/server/delete/${folder}`,{method:'POST'});
+            if(curSrv && curSrv.folder===folder) goBackToServers();
+            else loadServers();
+        }
+    }
+
+    async function createServer(){
+        const {value:name}=await Swal.fire({title:'New Workspace',input:'text',inputPlaceholder:'my-server',background:'#021a2b',color:'white'});
+        if(name){
+            await fetch('/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});
+            loadServers();
+        }
+    }
+
+    function goBackToServers(){
+        document.getElementById('homeView').style.display='block';
+        document.getElementById('manageView').style.display='none';
+        if(logInterval) clearInterval(logInterval);
+        if(statsInterval) clearInterval(statsInterval);
+        curSrv=null;
+        loadServers();
+    }
+
+    function openServer(s){
+        curSrv=s;
+        document.getElementById('homeView').style.display='none';
+        document.getElementById('manageView').style.display='block';
+        document.getElementById('vSrvName').innerHTML = s.name;
+        currentPath="";
+        loadFileManager();
+        startLogsAndStats();
+        loadServerSettingsUI();
+    }
+
+    async function loadServerSettingsUI(){
+        if(!curSrv) return;
+        try{
+            const r = await fetch(`/server/config/${curSrv.folder}`);
+            const cfg = await r.json();
+            document.getElementById('startupFileInput').value = cfg.startup_file || '';
+            document.getElementById('reqPkgsInput').value = cfg.requirements || '';
+        }catch(e){}
+    }
+
+    async function srvAction(act){
+        if(!curSrv) return;
+        await fetch(`/server/action/${curSrv.folder}/${act}`,{method:'POST'});
+        Swal.fire({toast:true,icon:'info',title:`${act.toUpperCase()}`,timer:1200,background:'#021a2b'});
+    }
+
+    function startLogsAndStats(){
+        if(logInterval) clearInterval(logInterval);
+        if(statsInterval) clearInterval(statsInterval);
+        logInterval = setInterval(async()=>{
+            if(!curSrv) return;
+            const r = await fetch(`/server/log/${curSrv.folder}`);
+            const d = await r.json();
+            const consoleDiv = document.getElementById('console');
+            if(d.log !== consoleDiv.getAttribute('data-raw')){
+                consoleDiv.setAttribute('data-raw',d.log);
+                let lines = (d.log||'').split('\n').slice(-250);
+                consoleDiv.innerHTML = lines.map(l=>`<div>${escapeHtml(l)}</div>`).join('');
+                consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            }
+            document.getElementById('vUptime').innerHTML = d.online ? '🟢 ONLINE' : '⚫ OFFLINE';
+        },1600);
+        // resource stats: cpu/gpu/ram
+        statsInterval = setInterval(async()=>{
+            if(!curSrv) return;
+            const res = await fetch(`/server/stats/${curSrv.folder}`);
+            const stats = await res.json();
+            let cpu = stats.cpu_usage || 0;
+            let ram = stats.ram_used_mb || 0;
+            let ramTotal = stats.ram_total_mb || 1024;
+            let ramPercent = Math.min(100, Math.round((ram/ramTotal)*100));
+            let gpu = stats.gpu_usage || 0;
+            document.getElementById('cpuVal').innerText = cpu+'%';
+            document.getElementById('cpuFill').style.width = cpu+'%';
+            document.getElementById('ramVal').innerText = ram+'MB';
+            document.getElementById('ramFill').style.width = ramPercent+'%';
+            document.getElementById('gpuVal').innerText = gpu+'%';
+            document.getElementById('gpuFill').style.width = gpu+'%';
+        }, 2200);
+    }
+
+    function sendConsoleCommand(){
+        let cmd = document.getElementById('termCmd').value.trim();
+        if(cmd && curSrv){
+            fetch(`/server/command/${curSrv.folder}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:cmd})});
+            document.getElementById('termCmd').value='';
+        }
+    }
+
+    // ------- FILE MANAGER (compact + all actions inline) -------
+    async function loadFileManager(){
+        if(!curSrv) return;
+        const r = await fetch(`/files/list/${curSrv.folder}?path=${encodeURIComponent(currentPath)}`);
+        const files = await r.json();
+        const tbody = document.getElementById('fmFileList');
+        const emptyDiv = document.getElementById('fmEmptyMsg');
+        if(!files.length){ tbody.innerHTML=''; emptyDiv.style.display='block'; renderBread(); return; }
+        emptyDiv.style.display='none';
+        tbody.innerHTML = files.map(f => {
+            const isZip = f.name.toLowerCase().endsWith('.zip');
+            return `<tr>
+                <td><div class="file-name" onclick="${f.is_dir?`enterFolder('${escapeHtml(f.name)}')`:`editFile('${escapeHtml(f.name)}')`}"><i class="fas ${f.is_dir?'fa-folder-open':(isZip?'fa-file-archive':'fa-file-code')}"></i> ${escapeHtml(f.name)}</div></td>
+                <td style="font-size:0.7rem;">${f.is_dir?'—':formatSize(f.size)}</td>
+                <td style="font-size:0.65rem;">${f.modified?new Date(f.modified*1000).toLocaleString():'—'}</td>
+                <td class="file-actions">
+                    ${!f.is_dir?`<i class="fas fa-edit" onclick="event.stopPropagation(); editFile('${escapeHtml(f.name)}')" title="Edit"></i>`:''}
+                    <i class="fas fa-pencil-alt" onclick="event.stopPropagation(); renameItem('${escapeHtml(f.name)}')" title="Rename"></i>
+                    ${!f.is_dir?`<i class="fas fa-download" onclick="event.stopPropagation(); downloadFile('${escapeHtml(f.name)}')" title="Download"></i>`:''}
+                    ${isZip?`<i class="fas fa-box-open" onclick="event.stopPropagation(); unzipItem('${escapeHtml(f.name)}')" title="Extract"></i>`:''}
+                    <i class="fas fa-trash" onclick="event.stopPropagation(); deleteItem('${escapeHtml(f.name)}')" style="color:#ffaaaa;" title="Delete"></i>
+                </td>
+            </tr>`;
+        }).join('');
+        renderBread();
+    }
+    function renderBread(){
+        let parts = currentPath.split('/').filter(p=>p);
+        let html = `<span onclick="navigateToRoot()" style="cursor:pointer;">📁 ROOT</span>`;
+        let cum="";
+        for(let p of parts){ cum+=(cum?'/':'')+p; html+=` / <span onclick="navigateToPath('${cum}')" style="cursor:pointer;">${escapeHtml(p)}</span>`;}
+        document.getElementById('fmBreadcrumb').innerHTML=html;
+    }
+    function navigateToRoot(){ currentPath=""; loadFileManager(); }
+    function navigateToPath(p){ currentPath=p; loadFileManager(); }
+    function enterFolder(f){ currentPath = currentPath?`${currentPath}/${f}`:f; loadFileManager(); }
+
+    async function editFile(name){
+        const r = await fetch(`/files/content/${curSrv.folder}/${encodeURIComponent(name)}?path=${encodeURIComponent(currentPath)}`);
+        const data = await r.json();
+        document.getElementById('edFile').innerHTML = `<i class="fas fa-code"></i> ${name}`;
+        const textarea = document.getElementById('edText');
+        textarea.value = data.content||'';
+        document.getElementById('editor').style.display='flex';
+        if(!editorInstance) editorInstance = CodeMirror.fromTextArea(textarea,{mode:"python",theme:"dracula",lineNumbers:true});
+        else editorInstance.setValue(data.content||'');
+        editorInstance.refresh();
+    }
+    async function saveFileContent(){
+        const name = document.getElementById('edFile').innerText.replace(/[^\w\.\-_]/g,'');
+        const content = editorInstance.getValue();
+        await fetch(`/files/save/${curSrv.folder}/${encodeURIComponent(name)}?path=${encodeURIComponent(currentPath)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content})});
+        closeEditor();
+        Swal.fire({toast:true,icon:'success',title:'Saved',timer:1000});
+    }
+    function closeEditor(){ document.getElementById('editor').style.display='none'; }
+    async function deleteItem(name){
+        if(await Swal.fire({title:`Delete "${name}"?`,icon:'warning',showCancelButton:true,background:'#021a2b'})){
+            await fetch(`/files/delete-bulk/${curSrv.folder}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({names:[name],path:currentPath})});
+            loadFileManager();
+        }
+    }
+    async function renameItem(oldName){
+        const {value:newName}=await Swal.fire({title:'Rename',input:'text',inputValue:oldName,background:'#021a2b'});
+        if(newName && newName!==oldName){
+            await fetch(`/files/rename/${curSrv.folder}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({old:oldName,new:newName,path:currentPath})});
+            loadFileManager();
+        }
+    }
+    function downloadFile(name){ window.open(`/files/download/${curSrv.folder}/${encodeURIComponent(name)}?path=${encodeURIComponent(currentPath)}`,'_blank'); }
+    async function unzipItem(name){
+        const res = await fetch(`/files/unzip/${curSrv.folder}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,path:currentPath})});
+        if((await res.json()).status==='success'){ Swal.fire({toast:true,icon:'success',title:'Extracted'}); loadFileManager();}
+        else Swal.fire('error','unzip failed','error');
+    }
+
+    // ---- SETTINGS LOGIC (per-server startup & pip install) ----
+    document.getElementById('settingsBtn')?.addEventListener('click',()=>{
+        loadServerSettingsUI();
+        document.getElementById('settingsModal').style.display='flex';
+    });
+    document.getElementById('closeSettingsBtn')?.addEventListener('click',()=>{
+        document.getElementById('settingsModal').style.display='none';
+    });
+    document.getElementById('applySettingsBtn')?.addEventListener('click',async()=>{
+        if(!curSrv) return;
+        const startup = document.getElementById('startupFileInput').value.trim();
+        const reqPkgs = document.getElementById('reqPkgsInput').value.trim();
+        await fetch(`/server/set-config/${curSrv.folder}`,{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({startup_file:startup, requirements:reqPkgs})
+        });
+        if(reqPkgs){
+            await Swal.fire({title:'Installing packages',text:`pip install ${reqPkgs}`,icon:'info',background:'#021a2b'});
+            await fetch(`/server/action/${curSrv.folder}/pip-install`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packages:reqPkgs.split(/\s+/)})});
+            Swal.fire({toast:true,icon:'success',title:'Dependencies installed',timer:2000});
+        }
+        document.getElementById('settingsModal').style.display='none';
+    });
+
+    // file buttons
+    document.getElementById('fmUploadBtn')?.addEventListener('click',()=>{
+        let inp=document.createElement('input'); inp.type='file';
+        inp.onchange=async(e)=>{
+            if(!e.target.files.length) return;
+            let fd=new FormData(); fd.append('file',e.target.files[0]); fd.append('path',currentPath);
+            await fetch(`/files/upload/${curSrv.folder}`,{method:'POST',body:fd});
+            loadFileManager();
+            Swal.fire({toast:true,icon:'success',title:'Uploaded',timer:1000});
+        };
+        inp.click();
+    });
+    document.getElementById('fmInstallReqBtn')?.addEventListener('click',async()=>{
+        if(!curSrv) return;
+        const {value:reqs}=await Swal.fire({title:'Install packages',input:'text',inputPlaceholder:'flask numpy',background:'#021a2b'});
+        if(reqs){
+            await fetch(`/server/action/${curSrv.folder}/pip-install`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({packages:reqs.split(/\s+/)})});
+            Swal.fire({toast:true,icon:'success',title:'Installing...',timer:1500});
+        }
+    });
+    document.getElementById('fmNewFileBtn')?.addEventListener('click',async()=>{
+        const {value:n}=await Swal.fire({title:'New file',input:'text',background:'#021a2b'});
+        if(n){ await fetch(`/files/create-file/${curSrv.folder}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,path:currentPath})}); loadFileManager();}
+    });
+    document.getElementById('fmNewFolderBtn')?.addEventListener('click',async()=>{
+        const {value:n}=await Swal.fire({title:'New folder',input:'text',background:'#021a2b'});
+        if(n){ await fetch(`/files/create-folder/${curSrv.folder}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,path:currentPath})}); loadFileManager();}
+    });
+    document.getElementById('fmRefreshBtn')?.addEventListener('click',()=>{ loadFileManager(); });
+
+    document.addEventListener('DOMContentLoaded',()=>{ loadServers(); });
+</script>
+</body>
+</html>
