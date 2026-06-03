@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=0">
+    <title>ARAFAT | ADMIN PANEL</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: radial-gradient(circle at 20% 30%, #0a0f1a, #000000);
+            color: #0ff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Matrix background */
+        #matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.15;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Top bar */
+        .topbar {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        .logo-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+        }
+        .logo-icon {
+            background: #0ff;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+        }
+        .btn-logout {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(0,255,255,0.3);
+            border-radius: 40px;
+            padding: 6px 16px;
+            color: #0ff;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+        .btn-logout:hover {
+            background: #0ff;
+            color: black;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 18px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: #6cffb0;
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .stat-unit {
+            font-size: 12px;
+            margin-left: 4px;
+        }
+
+        /* User card */
+        .user-card {
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 18px;
+            margin-bottom: 16px;
+            transition: 0.2s;
+        }
+        .user-card:hover {
+            border-color: #0ff;
+            box-shadow: 0 0 12px rgba(0,255,255,0.15);
+        }
+        .user-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #0ff, #ff4466);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        .user-info {
+            flex: 1;
+        }
+        .user-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .user-email {
+            font-size: 11px;
+            color: #6cffb0;
+        }
+        .user-badges {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+        .badge {
+            font-size: 9px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid;
+        }
+        .badge-limit { border-color: #0ff; color: #0ff; }
+        .badge-active { border-color: #0ff; color: #0ff; }
+        .badge-banned { border-color: #ff4466; color: #ff4466; }
+        .badge-role { border-color: #6cffb0; color: #6cffb0; }
+
+        .server-stats {
+            font-size: 11px;
+            display: flex;
+            gap: 20px;
+            margin: 8px 0;
+            color: #6cffb0;
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+            border-top: 1px solid rgba(0,255,255,0.1);
+            padding-top: 12px;
+        }
+        .admin-btn {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(0,255,255,0.3);
+            border-radius: 30px;
+            padding: 6px 14px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #0ff;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+        .admin-btn:hover {
+            background: #0ff;
+            color: black;
+        }
+        .admin-btn-danger {
+            border-color: #ff4466;
+            color: #ff4466;
+        }
+        .admin-btn-danger:hover {
+            background: #ff4466;
+            color: black;
+        }
+
+        .create-btn {
+            background: #0ff;
+            color: black;
+            border: none;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+        }
+        .create-btn:hover {
+            background: #6cffb0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 24px;
+            color: #6cffb0;
+        }
+
+        @media (max-width: 680px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .user-header { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+<canvas id="matrix-bg"></canvas>
+
+<div class="topbar">
+    <div class="logo-box">
+        <div class="logo-icon"><i class="fas fa-shield-halved"></i></div>
+        <span>ARAFAT AUTHORITY</span>
+    </div>
+    <button class="btn-logout" onclick="location.href='/admin-login'">
+        <i class="fas fa-sign-out-alt"></i> LOGOUT
+    </button>
+</div>
+
+<div class="container">
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+            <div class="stat-label">ONLINE NODES</div>
+            <div class="stat-value"><span id="onlineCount">0</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">TOTAL SERVERS</div>
+            <div class="stat-value"><span id="totalSrvCount">0</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">SUSPENDED USERS</div>
+            <div class="stat-value"><span id="suspendedCount">0</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">CPU USAGE</div>
+            <div class="stat-value"><span id="cpuVal">0</span><span class="stat-unit">%</span></div>
+        </div>
+    </div>
+
+    <!-- Create User Button -->
+    <div style="text-align: right; margin-bottom: 20px;">
+        <button class="admin-btn create-btn" onclick="createUser()">
+            <i class="fas fa-plus-circle"></i> NEW IDENTITY
+        </button>
+    </div>
+
+    <!-- User List -->
+    <div id="userList"></div>
+</div>
+
+<script>
+    // Matrix rain
+    const canvas = document.getElementById('matrix-bg');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const letters = "01ARAFATADMIN";
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+    function drawMatrix() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#0ff';
+        ctx.font = fontSize + 'px monospace';
+        for (let i = 0; i < drops.length; i++) {
+            const text = letters.charAt(Math.floor(Math.random() * letters.length));
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+        }
+    }
+    setInterval(drawMatrix, 60);
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
+    // Toast helper
+    function showToast(msg, icon = 'success') {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: msg,
+            showConfirmButton: false,
+            timer: 2000,
+            background: '#0a0f1a',
+            color: '#0ff'
+        });
+    }
+
+    // Load stats and users
+    async function loadAdminData() {
+        try {
+            const res = await fetch('/admin/stats');
+            const data = await res.json();
+
+            document.getElementById('cpuVal').innerText = data.sys_cpu || '0';
+            let totalSrv = 0, onlineSrv = 0, bannedUsers = 0;
+
+            const userListDiv = document.getElementById('userList');
+            if (!data.users || data.users.length === 0) {
+                userListDiv.innerHTML = `<div class="empty-state"><i class="fas fa-users" style="font-size: 48px;"></i><p>No users found.</p></div>`;
+            } else {
+                userListDiv.innerHTML = data.users.map(u => {
+                    totalSrv += u.srv_count;
+                    onlineSrv += u.active_srvs;
+                    if (u.status === 'banned') bannedUsers++;
+
+                    return `
+                    <div class="user-card" data-user-id="${u.id}">
+                        <div class="user-header">
+                            <div class="user-avatar">${(u.fname?.[0] || u.email?.[0] || 'U').toUpperCase()}</div>
+                            <div class="user-info">
+                                <div class="user-name">${escapeHtml(u.fname || u.email)}</div>
+                                <div class="user-email">${escapeHtml(u.email)}</div>
+                                <div class="user-badges">
+                                    <span class="badge badge-limit">LIMIT: ${u.server_limit}</span>
+                                    <span class="badge ${u.status === 'active' ? 'badge-active' : 'badge-banned'}">${u.status.toUpperCase()}</span>
+                                    <span class="badge badge-role">${u.role.toUpperCase()}</span>
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="server-stats" style="justify-content: flex-end;">
+                                    <span><i class="fas fa-play-circle"></i> ${u.active_srvs} online</span>
+                                    <span><i class="fas fa-server"></i> ${u.srv_count} total</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="admin-btn" onclick="editPermissions(${u.id}, '${u.role}', ${u.server_limit}, '${u.status}')">
+                                <i class="fas fa-sliders-h"></i> LIMIT/ROLE
+                            </button>
+                            ${u.status === 'active' ? 
+                                `<button class="admin-btn admin-btn-danger" onclick="toggleBan(${u.id}, 'banned')">
+                                    <i class="fas fa-user-slash"></i> BAN
+                                </button>` : 
+                                `<button class="admin-btn" onclick="toggleBan(${u.id}, 'active')">
+                                    <i class="fas fa-user-check"></i> UNBAN
+                                </button>`
+                            }
+                            <button class="admin-btn" onclick="manageUser(${u.id})">
+                                <i class="fas fa-server"></i> MANAGE
+                            </button>
+                            <button class="admin-btn admin-btn-danger" onclick="deleteUser(${u.id})">
+                                <i class="fas fa-trash"></i> PURGE
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            document.getElementById('onlineCount').innerText = onlineSrv;
+            document.getElementById('totalSrvCount').innerText = totalSrv;
+            document.getElementById('suspendedCount').innerText = bannedUsers;
+        } catch(e) {
+            console.error("Load error", e);
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // Ban/Unban user
+    async function toggleBan(userId, newStatus) {
+        const action = newStatus === 'banned' ? 'BAN' : 'UNBAN';
+        const confirm = await Swal.fire({
+            title: `${action} USER?`,
+            text: newStatus === 'banned' ? 'User will not be able to login.' : 'User will regain access.',
+            icon: 'warning',
+            showCancelButton: true,
+            background: '#0a0f1a',
+            color: '#0ff'
+        });
+        if (!confirm.isConfirmed) return;
+
+        await fetch('/admin/user/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, status: newStatus, role: 'free', limit: 1 })
+        });
+        showToast(`${action} successful`);
+        loadAdminData();
+    }
+
+    // Edit permissions (limit and role)
+    async function editPermissions(userId, role, limit, status) {
+        const { value: formValues } = await Swal.fire({
+            title: 'MODIFY PERMISSIONS',
+            background: '#0a0f1a',
+            color: '#0ff',
+            html: `
+                <input id="sw-limit" type="number" class="swal2-input" value="${limit}" placeholder="Server limit" style="background:#000; color:#0ff; border:1px solid #0ff;">
+                <select id="sw-role" class="swal2-input" style="background:#000; color:#0ff; border:1px solid #0ff;">
+                    <option value="free" ${role === 'free' ? 'selected' : ''}>Free</option>
+                    <option value="premium" ${role === 'premium' ? 'selected' : ''}>Premium</option>
+                </select>
+            `,
+            preConfirm: () => ({
+                user_id: userId,
+                limit: document.getElementById('sw-limit').value,
+                role: document.getElementById('sw-role').value,
+                status: status
+            })
+        });
+        if (formValues) {
+            await fetch('/admin/user/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formValues)
+            });
+            showToast('Permissions updated');
+            loadAdminData();
+        }
+    }
+
+    // Create new user (admin only)
+    async function createUser() {
+        const { value: userData } = await Swal.fire({
+            title: 'NEW IDENTITY',
+            background: '#0a0f1a',
+            color: '#0ff',
+            html: `
+                <input id="new-name" class="swal2-input" placeholder="Full Name" style="background:#000; color:#0ff; border:1px solid #0ff;">
+                <input id="new-email" class="swal2-input" placeholder="Email Address" style="background:#000; color:#0ff; border:1px solid #0ff;">
+                <input id="new-pass" class="swal2-input" type="password" placeholder="Password" style="background:#000; color:#0ff; border:1px solid #0ff;">
+                <input id="new-limit" type="number" class="swal2-input" placeholder="Server Limit" value="1" style="background:#000; color:#0ff; border:1px solid #0ff;">
+            `,
+            preConfirm: () => ({
+                name: document.getElementById('new-name').value,
+                email: document.getElementById('new-email').value,
+                pass: document.getElementById('new-pass').value,
+                limit: document.getElementById('new-limit').value
+            })
+        });
+        if (userData && userData.name && userData.email && userData.pass) {
+            const res = await fetch('/admin/create-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userData)
+            });
+            if (res.ok) {
+                showToast('User created');
+                loadAdminData();
+            } else {
+                showToast('Failed', 'error');
+            }
+        }
+    }
+
+    // Delete user
+    async function deleteUser(userId) {
+        const confirm = await Swal.fire({
+            title: 'PURGE USER?',
+            text: 'All servers and files will be deleted permanently.',
+            icon: 'error',
+            showCancelButton: true,
+            background: '#0a0f1a',
+            color: '#0ff'
+        });
+        if (!confirm.isConfirmed) return;
+        await fetch(`/admin/delete-user/${userId}`, { method: 'POST' });
+        showToast('User purged');
+        loadAdminData();
+    }
+
+    // Manage user servers
+    function manageUser(userId) {
+        window.location.href = `/admin/manage-user/${userId}`;
+    }
+
+    // Auto refresh every 5 seconds
+    setInterval(loadAdminData, 5000);
+    loadAdminData();
+</script>
+</body>
+  </html>

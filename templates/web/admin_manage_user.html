@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=0">
+    <title>ARAFAT | MANAGE USER</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: radial-gradient(circle at 20% 30%, #0a1a0a, #000000);
+            color: #0f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        #matrix-bg { position:fixed; top:0; left:0; width:100%; height:100%; opacity:0.15; z-index:0; pointer-events:none; }
+        .topbar {
+            position:relative; z-index:2; display:flex; justify-content:space-between; align-items:center;
+            padding:12px 20px; background:rgba(0,0,0,0.6); backdrop-filter:blur(12px);
+            border-bottom:1px solid rgba(0,255,0,0.3);
+        }
+        .logo-box { display:flex; align-items:center; gap:10px; font-weight:800; font-size:1.3rem; letter-spacing:2px; }
+        .logo-icon { background:#0f0; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:black; }
+        .back-btn { background:rgba(0,0,0,0.5); border:1px solid rgba(0,255,0,0.3); border-radius:40px; padding:6px 16px; color:#0f0; cursor:pointer; transition:0.2s; }
+        .back-btn:hover { background:#0f0; color:#000; }
+        .container { position:relative; z-index:2; max-width:1000px; margin:0 auto; padding:20px; }
+        .user-card { background:rgba(0,0,0,0.65); backdrop-filter:blur(12px); border:1px solid rgba(0,255,0,0.3); border-radius:24px; padding:25px; margin-bottom:30px; text-align:center; }
+        .user-avatar { width:80px; height:80px; background:linear-gradient(135deg,#0f0,#ff6666); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:36px; font-weight:bold; margin:0 auto 15px; box-shadow:0 0 20px rgba(0,255,0,0.3); }
+        .srv-card { background:rgba(0,0,0,0.55); backdrop-filter:blur(8px); border:1px solid rgba(0,255,0,0.2); border-radius:20px; padding:18px; margin-bottom:18px; }
+        .srv-card:hover { border-color:#0f0; box-shadow:0 0 15px rgba(0,255,0,0.2); }
+        .status-badge { padding:5px 12px; border-radius:20px; font-size:11px; font-weight:bold; background:rgba(0,0,0,0.5); border:1px solid; display:inline-flex; align-items:center; gap:6px; }
+        .status-online { color:#0f0; border-color:#0f0; }
+        .status-offline { color:#888; border-color:#888; }
+        .status-suspended { color:#ff6666; border-color:#ff6666; }
+        .btn { padding:10px 12px; border-radius:12px; font-weight:bold; font-size:12px; cursor:pointer; background:rgba(0,0,0,0.6); border:1px solid rgba(0,255,0,0.3); color:#0f0; display:inline-flex; align-items:center; gap:6px; font-family:monospace; transition:0.2s; }
+        .btn:hover { background:#0f0; color:#000; }
+        .btn-danger { border-color:#ff6666; color:#ff6666; }
+        .btn-danger:hover { background:#ff6666; color:#000; }
+        .destroy-btn { background:transparent; border:none; color:#ff6666; cursor:pointer; font-size:11px; opacity:0.7; }
+        .destroy-btn:hover { opacity:1; text-decoration:underline; }
+        .action-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin:15px 0 10px; }
+    </style>
+</head>
+<body>
+<canvas id="matrix-bg"></canvas>
+<div class="topbar"><div class="logo-box"><div class="logo-icon"><i class="fas fa-shield-halved"></i></div><span>ARAFAT ADMIN</span></div><button class="back-btn" onclick="location.href='/admin/panel'"><i class="fas fa-arrow-left"></i> BACK TO PANEL</button></div>
+<div class="container">
+    <div class="user-card"><div class="user-avatar">{{ user.fname[0] if user.fname else 'U' }}</div><h1>{{ user.fname if user.fname else user.username }}</h1><p>{{ user.email }}</p><p style="font-size:12px;">ID: {{ user.id }} | Role: {{ user.role }} | Status: {{ user.status }}</p></div>
+    <h3 style="margin-bottom:15px;"><i class="fas fa-server"></i> USER INSTANCES</h3>
+    <div id="serversContainer">
+        {% if servers %}
+            {% for s in servers %}
+            <div class="srv-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div><h3><i class="fas fa-microchip"></i> {{ s.name }}</h3><div class="srv-path" style="font-size:11px; color:#6cff6c;">{{ s.folder }}</div></div>
+                    <div class="status-badge {% if s.status == 'suspended' %}status-suspended{% elif s.online %}status-online{% else %}status-offline{% endif %}"><span class="status-dot"></span>{% if s.status == 'suspended' %}SUSPENDED{% elif s.online %}ONLINE{% else %}OFFLINE{% endif %}</div>
+                </div>
+                <div class="action-grid">
+                    <button class="btn" onclick="loginAsUser('{{ user.id }}')"><i class="fas fa-user-shield"></i> ACCESS</button>
+                    <button class="btn" onclick="browseFiles('{{ s.folder }}')"><i class="fas fa-folder"></i> FILES</button>
+                    {% if s.status == 'suspended' %}
+                    <button class="btn" onclick="toggleSuspend('{{ s.id }}', 'active')"><i class="fas fa-unlock"></i> UNSUSPEND</button>
+                    {% else %}
+                    <button class="btn btn-danger" onclick="toggleSuspend('{{ s.id }}', 'suspended')"><i class="fas fa-ban"></i> SUSPEND</button>
+                    {% endif %}
+                    <button class="btn" onclick="forceStop('{{ s.folder }}')"><i class="fas fa-power-off"></i> FORCE STOP</button>
+                </div>
+                <div style="text-align:right; margin-top:10px; padding-top:10px; border-top:1px dashed rgba(255,102,102,0.3);"><button class="destroy-btn" onclick="deleteServer('{{ s.id }}', '{{ s.folder }}')"><i class="fas fa-trash-alt"></i> DESTROY INSTANCE</button></div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align:center; padding:60px;"><i class="fas fa-ghost" style="font-size:48px;"></i><p>No servers found.</p></div>
+        {% endif %}
+    </div>
+</div>
+<script>
+    const canvas = document.getElementById('matrix-bg');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const letters = "01ARAFATADMIN";
+    const fontSize = 14;
+    const drops = Array(Math.floor(canvas.width/fontSize)).fill(1);
+    function draw() { ctx.fillStyle='rgba(0,0,0,0.05)'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.fillStyle='#0f0'; ctx.font=fontSize+'px monospace'; for(let i=0;i<drops.length;i++) { const text=letters.charAt(Math.random()*letters.length); ctx.fillText(text,i*fontSize,drops[i]*fontSize); if(drops[i]*fontSize>canvas.height && Math.random()>0.975) drops[i]=0; drops[i]++; } }
+    setInterval(draw,60);
+    window.addEventListener('resize',()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
+    function showToast(msg, icon='success'){ Swal.fire({toast:true,position:'top-end',icon:icon,title:msg,showConfirmButton:false,timer:2000,background:'#0a1a0a',color:'#0f0'}); }
+    function loginAsUser(uid){ window.location.href=`/admin/login-as/${uid}`; }
+    function browseFiles(folder){ window.location.href=`/admin/files/${folder}`; }
+    async function toggleSuspend(sid,status){ const action=status==='suspended'?'SUSPEND':'UNSUSPEND'; if(!await Swal.fire({title:`${action} SERVER?`,text:status==='suspended'?'User cannot start this server.':'User can manage again.',icon:'warning',showCancelButton:true,background:'#0a1a0a',color:'#0f0'}).then(r=>r.isConfirmed)) return; const res=await fetch(`/admin/suspend-server/${sid}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})}); if((await res.json()).status==='success'){ showToast(`${action}ED`); setTimeout(()=>location.reload(),1500); } else showToast('Failed','error'); }
+    async function forceStop(folder){ if(!await Swal.fire({title:'FORCE STOP',text:'Kill process immediately?',icon:'warning',showCancelButton:true,background:'#0a1a0a',color:'#0f0'}).then(r=>r.isConfirmed)) return; const res=await fetch(`/server/action/${folder}/stop`,{method:'POST'}); if((await res.json()).status==='stopped'){ showToast('Stopped'); setTimeout(()=>location.reload(),1000); } else showToast('Error','error'); }
+    async function deleteServer(sid,folder){ if(!await Swal.fire({title:'DESTROY INSTANCE',text:`Delete ${folder} permanently?`,icon:'error',showCancelButton:true,background:'#0a1a0a',color:'#0f0'}).then(r=>r.isConfirmed)) return; const res=await fetch(`/admin/delete-server/${sid}`,{method:'POST'}); if((await res.json()).status==='deleted'){ showToast('Destroyed'); setTimeout(()=>location.reload(),1200); } else showToast('Failed','error'); }
+</script>
+</body>
+  </html>
